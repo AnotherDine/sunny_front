@@ -1,0 +1,46 @@
+name: Build React
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  # 버킷에 저장할 폴더 이름
+  PROJECT_NAME: AnotherDine_Front
+  # S3 버킷 이름
+  BUCKET_NAME: anotherdine-front-cicd-bucket
+  # CodeDeploy의 애플리케이션 이름
+  CODE_DEPLOY_APP_NAME: anotherdine-app
+  
+
+jobs:
+  build:
+    # 실행 환경 설정
+    runs-on: ubuntu-latest
+
+    # 차례대로 실행
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up NODE18.15.0
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+      
+    - name: run npm install
+      run: npm install
+
+    - name: build react
+      run: npm run build
+      
+    # AWS 인증
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2
+      
+    # S3 버킷으로 파일을 업로드
+    - name: Upload to S3
+      run: aws s3 cp --recursive --region ap-northeast-2 build s3://$BUCKET_NAME
